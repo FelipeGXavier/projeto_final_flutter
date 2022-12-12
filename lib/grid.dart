@@ -1,6 +1,9 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:projeto_final/expenses.dart';
+import 'package:projeto_final/teste.dart';
+
+import 'inifiniteNewsList.dart';
 
 class GridTabs extends StatelessWidget {
   const GridTabs({super.key});
@@ -21,11 +24,11 @@ class GridTabs extends StatelessWidget {
             ),
             title: const Text('Gerenciador de Despesas'),
           ),
-          body: const TabBarView(
+          body: TabBarView(
             children: [
-              Icon(Icons.directions_car),
+              Teste(),
               Expenses(),
-              Icon(Icons.directions_bike),
+              InfiniteScrollPaginatorDemo(),
             ],
           ),
         ),

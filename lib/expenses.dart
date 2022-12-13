@@ -51,12 +51,19 @@ class ExpensesState extends State {
     },
   ];
 
+  late Future<List<FinancialMovement>> entry;
+  late Future<List<Map<String, dynamic>>> entry2;
+  late Future<double> entry3;
+
   @override
   void initState() {
     super.initState();
+    entry = loadExpenses();
+    entry2 = loadCategories();
+    loadBalance();
   }
 
-  Future loadData() async {
+  Future<List<FinancialMovement>> loadExpenses() async {
     const basePath = "http://10.0.2.2:3000";
     const path = "$basePath/expenses";
     var res = await http.get(
@@ -67,24 +74,62 @@ class ExpensesState extends State {
       "categories": bodyResponse['categories'],
       "expenses": bodyResponse['expenses']
     };
-    return data;
+    List<Map<String, dynamic>> rawExpensesData =
+        List<Map<String, dynamic>>.from(data['expenses']);
+    List<FinancialMovement> expenses = [];
+    for (var element in rawExpensesData) {
+      expenses.add(FinancialMovement.fromMap(element));
+    }
+    return expenses;
+  }
+
+  Future<List<Map<String, dynamic>>> loadCategories() async {
+    const basePath = "http://10.0.2.2:3000";
+    const path = "$basePath/categories";
+    var res = await http.get(
+      Uri.parse(path),
+    );
+    var bodyResponse = jsonDecode(res.body);
+    var data = {
+      "categories": bodyResponse['categories'],
+      "expenses": bodyResponse['expenses']
+    };
+    List<Map<String, dynamic>> categories =
+        List<Map<String, dynamic>>.from(data['categories']);
+    return categories;
+  }
+
+  loadBalance() async {
+    const basePath = "http://10.0.2.2:3000";
+    const path = "$basePath/current-balance";
+    var res = await http.get(
+      Uri.parse(path),
+    );
+    var bodyResponse = jsonDecode(res.body);
+    setState(() {
+      _currentExpense = double.parse(bodyResponse["balance"].toString());
+    });
   }
 
   @override
   Widget build(BuildContext context) {
     return FutureBuilder(
-      future: loadData(),
+      future: Future.wait([entry, entry2]),
       builder: (context, snapshot) {
         if (snapshot.hasData) {
-          List<Map<String, dynamic>> rawExpensesData =
-              List<Map<String, dynamic>>.from(snapshot.data['expenses']);
-          List<FinancialMovement> expenses = [];
-          for (var element in rawExpensesData) {
-            expenses.add(FinancialMovement.fromMap(element));
-          }
+          List<FinancialMovement> expenses =
+              snapshot.data![0] as List<FinancialMovement>;
           List<Map<String, dynamic>> categories =
-              List<Map<String, dynamic>>.from(snapshot.data['categories']);
-          return buildWidget(categories, expenses);
+              snapshot.data![1] as List<Map<String, dynamic>>;
+          var balance = expenses.fold(0.0, (sum, item) {
+            if (item.type) {
+              return sum + item.value;
+            } else {
+              return sum - item.value;
+            }
+          });
+          print(_currentExpense);
+          return buildWidget(categories, expenses, balance);
         } else {
           return const Center(
             child: CircularProgressIndicator(),
@@ -94,8 +139,8 @@ class ExpensesState extends State {
     );
   }
 
-  Widget buildWidget(
-      List<Map<String, dynamic>> categories, List<FinancialMovement> expenses) {
+  Widget buildWidget(List<Map<String, dynamic>> categories,
+      List<FinancialMovement> expenses, double balance) {
     return Column(
       children: [
         Padding(
@@ -149,11 +194,6 @@ class ExpensesState extends State {
                   size: 12,
                 ),
                 onPressed: () {
-                  setState(() {
-                    _currentExpense = 10000.0;
-                    expenses.add(FinancialMovement("Teste", true, 10.0,
-                        FinancialMovementCategory.fromData(1, "TEste")));
-                  });
                   showDialog(
                       context: context,
                       builder: (BuildContext context) {
@@ -216,7 +256,7 @@ class ExpensesState extends State {
                           actions: [
                             ElevatedButton(
                                 child: const Text("Adicionar"),
-                                onPressed: () {
+                                onPressed: () async {
                                   _formKey.currentState!.save();
                                   var category =
                                       FinancialMovementCategory(_category);
@@ -225,7 +265,11 @@ class ExpensesState extends State {
                                   var movement = FinancialMovement(
                                       _title, typeOfMovement, _value, category);
                                   //print(jsonEncode(movement));
-                                  createExpense(movement);
+                                  await createExpense(movement);
+                                  await loadBalance();
+                                  setState(() {
+                                    entry = loadExpenses();
+                                  });
                                 })
                           ],
                         );
@@ -246,7 +290,7 @@ class ExpensesState extends State {
                     : const Icon(Icons.arrow_downward),
                 title: Text(expenses[index].title),
                 subtitle: Text(
-                    'R\$ ${expenses[index].value} - ${expenses[index].category}'),
+                    'R\$ ${expenses[index].value} - ${(expenses[index].category as FinancialMovementCategory).category}'),
               ),
             );
           },

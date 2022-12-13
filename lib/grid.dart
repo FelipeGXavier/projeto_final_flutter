@@ -17,17 +17,17 @@ class GridTabs extends StatelessWidget {
           appBar: AppBar(
             bottom: const TabBar(
               tabs: [
-                Tab(icon: Icon(Icons.directions_car)),
-                Tab(icon: Icon(Icons.directions_transit)),
-                Tab(icon: Icon(Icons.directions_bike)),
+                Tab(icon: Icon(Icons.money)),
+                Tab(icon: Icon(Icons.edit_note_sharp)),
+                Tab(icon: Icon(Icons.book)),
               ],
             ),
             title: const Text('Gerenciador de Despesas'),
           ),
-          body: TabBarView(
+          body: const TabBarView(
             children: [
-              Teste(),
               Expenses(),
+              Teste(),
               InfiniteScrollPaginatorDemo(),
             ],
           ),

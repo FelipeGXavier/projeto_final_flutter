@@ -1,6 +1,6 @@
 const express = require('express');
 var cors = require('cors');
-const { createNewExpense, allCategories, allExpenses } = require('./expenseDao');
+const { createNewExpense, allCategories, allExpenses, createNewCategory, deleteCategory } = require('./expenseDao');
 
 const app = express();
 
@@ -15,20 +15,34 @@ app.post('/expense', async (req, res) => {
     return res.json({ ok: true });
 })
 
+app.post('/category', async (req, res) => {
+    const { category } = req.body;
+    const categoryId = await createNewCategory({ category });
+    return res.json({ id: categoryId[0].id, category });
+})
+
+app.delete('/category/:id', async (req, res) => {
+    await deleteCategory(req.params.id);
+    return res.json({ ok: true });
+})
+
 app.get('/expenses', async (req, res) => {
-    const expenses = await allExpenses();
+    const filter = req.query.filter || null;
+    const expenses = await allExpenses(filter);
     return res.json({ expenses });
 })
 
 app.get('/current-balance', async (req, res) => {
-    const expenses = await allExpenses();
+    const filter = req.query.filter || null;
+    const expenses = await allExpenses(filter);
     const balance = expenses.reduce((prev, current) => {
         if (current.type) {
-            return current.value + prev;
+            return prev + current.value;
         } else {
-            return current.value - prev;
+            return prev - current.value;
         }
     }, 0);
+    console.log(balance)
     return res.json({ balance });
 })
 

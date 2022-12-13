@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-
-import 'grid.dart';
+import 'package:projeto_final/app.dart';
+import 'package:projeto_final/splashScreen.dart';
 
 void main() {
-  runApp(const GridTabs());
+  runApp(const App());
 }

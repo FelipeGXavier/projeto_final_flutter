@@ -25,7 +25,6 @@ class Expenses extends StatefulWidget {
 enum ExpenseType { income, expense }
 
 class ExpensesState extends State {
-  List<String> data = ["a"];
   int initialIndex = 0;
 
   int _category = 0;
@@ -51,21 +50,23 @@ class ExpensesState extends State {
     },
   ];
 
-  late Future<List<FinancialMovement>> entry;
-  late Future<List<Map<String, dynamic>>> entry2;
-  late Future<double> entry3;
+  late Future<List<FinancialMovement>> _expenses;
+  late Future<List<Map<String, dynamic>>> _categories;
 
   @override
   void initState() {
     super.initState();
-    entry = loadExpenses();
-    entry2 = loadCategories();
+    _expenses = loadExpenses();
+    _categories = loadCategories();
     loadBalance();
   }
 
   Future<List<FinancialMovement>> loadExpenses() async {
     const basePath = "http://10.0.2.2:3000";
-    const path = "$basePath/expenses";
+    var path = "$basePath/expenses";
+    if (initialIndex == 1) {
+      path = "$path?filter=month";
+    }
     var res = await http.get(
       Uri.parse(path),
     );
@@ -80,6 +81,7 @@ class ExpensesState extends State {
     for (var element in rawExpensesData) {
       expenses.add(FinancialMovement.fromMap(element));
     }
+    print(path);
     return expenses;
   }
 
@@ -101,7 +103,10 @@ class ExpensesState extends State {
 
   loadBalance() async {
     const basePath = "http://10.0.2.2:3000";
-    const path = "$basePath/current-balance";
+    var path = "$basePath/current-balance";
+    if (initialIndex == 1) {
+      path = "$path?filter=month";
+    }
     var res = await http.get(
       Uri.parse(path),
     );
@@ -114,7 +119,7 @@ class ExpensesState extends State {
   @override
   Widget build(BuildContext context) {
     return FutureBuilder(
-      future: Future.wait([entry, entry2]),
+      future: Future.wait([_expenses, _categories]),
       builder: (context, snapshot) {
         if (snapshot.hasData) {
           List<FinancialMovement> expenses =
@@ -128,7 +133,6 @@ class ExpensesState extends State {
               return sum - item.value;
             }
           });
-          print(_currentExpense);
           return buildWidget(categories, expenses, balance);
         } else {
           return const Center(
@@ -172,17 +176,19 @@ class ExpensesState extends State {
                 totalSwitches: 2,
                 labels: const ['Hoje', 'Mês'],
                 onToggle: (index) async {
-                  var t = await Future.delayed(const Duration(seconds: 1), () {
-                    return ["d"];
-                  });
-                  setState(() {
-                    initialIndex = index!;
-                    if (index == 0) {
-                      data = t;
-                    } else {
-                      data = t;
-                    }
-                  });
+                  if (index == 0) {
+                    setState(() {
+                      initialIndex = index!;
+                      _expenses = loadExpenses();
+                      loadBalance();
+                    });
+                  } else {
+                    setState(() {
+                      initialIndex = index!;
+                      _expenses = loadExpenses();
+                      loadBalance();
+                    });
+                  }
                 },
               ),
               ElevatedButton(
@@ -268,7 +274,7 @@ class ExpensesState extends State {
                                   await createExpense(movement);
                                   await loadBalance();
                                   setState(() {
-                                    entry = loadExpenses();
+                                    _expenses = loadExpenses();
                                   });
                                 })
                           ],

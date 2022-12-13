@@ -1,8 +1,8 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:projeto_final/expenses.dart';
-import 'package:projeto_final/teste.dart';
 
+import 'categories.dart';
 import 'inifiniteNewsList.dart';
 
 class GridTabs extends StatelessWidget {
@@ -27,7 +27,7 @@ class GridTabs extends StatelessWidget {
           body: const TabBarView(
             children: [
               Expenses(),
-              Teste(),
+              CategoriesWidget(),
               InfiniteScrollPaginatorDemo(),
             ],
           ),
